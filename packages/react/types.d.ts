@@ -31,14 +31,13 @@ export type Round = {
 		amount: number;
 		currency: string;
 	};
-	startTime;
-	proposalDeadline;
-	voteDeadline;
+	startTime: number;
+	proposalDeadline: number;
+	voteDeadline: number;
 	proposals: {
 		proposer: string;
 		id: number;
 		created: number;
-		ˇ;
 		title: string;
 		summary: string;
 		votes: number;
