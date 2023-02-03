@@ -21,3 +21,8 @@ export const timestamp = (date: string): number => {
 	if (!date) return 0;
 	return new Date(date).valueOf() ?? 0;
 };
+
+export const slug = (str: string): string => {
+	if (!str) return '';
+	return str.toLowerCase().replaceAll(' ', '-') ?? '';
+};

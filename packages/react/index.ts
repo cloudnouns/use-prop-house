@@ -1,7 +1,10 @@
 export { useHouse } from './hooks/useHouse';
+export { useHouseRounds } from './hooks/useHouseRounds';
 export { useHouses } from './hooks/useHouses';
-export { useRound } from './hooks/useRound';
-export { useRounds } from './hooks/useRounds';
+export { useOpenRounds } from './hooks/useOpenRounds';
 export { useProposal } from './hooks/useProposal';
-export { useProposals } from './hooks/useProposals';
-export { useVotes } from './hooks/useVotes';
+export { useRound } from './hooks/useRound';
+export { useRoundProposals } from './hooks/useRoundProposals';
+export { useRoundVotes } from './hooks/useRoundVotes';
+export { useUpcomingRounds } from './hooks/useUpcomingRounds';
+export { useVotingRounds } from './hooks/useVotingRounds';

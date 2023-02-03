@@ -38,7 +38,11 @@ const formatData = (data: any): Proposal | undefined => {
 	}
 
 	return {
-		roundId: prop?.auctionId ?? -1,
+		round: {
+			id: prop?.auction?.id ?? -1,
+			name: prop?.auction?.title ?? '',
+			status: prop?.auction?.status ?? '',
+		},
 		id: prop?.id ?? -1,
 		created: timestamp(prop?.createdDate),
 		proposer: prop?.address ?? '',
@@ -60,7 +64,11 @@ const formatData = (data: any): Proposal | undefined => {
 
 const query = `query GetProposalById($id: Int!) {
   proposal(id: $id) {
-    auctionId
+    auction {
+      id
+      title
+      status
+    }
     createdDate
     address
     id

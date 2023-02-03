@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import type { Vote } from '../types';
 import { fetchDataByQuery, timestamp } from '../utils';
 
-type UseVotesConfig = {
+type UseRoundVotesConfig = {
 	roundId: number;
 };
 
-export const useVotes = ({ roundId }: UseVotesConfig): Vote[] => {
+export const useRoundVotes = ({ roundId }: UseRoundVotesConfig): Vote[] => {
 	if (!roundId) return [];
 
 	const [votes, setVotes] = useState<Vote[]>([]);

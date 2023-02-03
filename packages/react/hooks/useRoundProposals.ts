@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import type { Proposal } from '../types';
 import { fetchDataByQuery, timestamp } from '../utils';
 
-type UseProposalsConfig = {
+type UseRoundProposalsConfig = {
 	roundId: number;
 };
 
-export const useProposals = ({ roundId }: UseProposalsConfig): Proposal[] => {
+export const useRoundProposals = ({
+	roundId,
+}: UseRoundProposalsConfig): Proposal[] => {
 	if (!roundId) return [];
 
 	const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -32,17 +34,21 @@ export const useProposals = ({ roundId }: UseProposalsConfig): Proposal[] => {
 };
 
 const formatData = (data: any): Proposal[] | undefined => {
-	const { data: result, error } = data;
+	const { data: result, errors } = data;
 	const props = result?.auction?.proposals ?? [];
 
-	if (error) {
-		// console.error(error);
+	if (errors) {
+		console.error(errors);
 		return;
 	}
 
 	const formattedProps: Proposal[] = props.map((prop: any) => {
 		return {
-			roundId: prop?.auctionId ?? -1,
+			round: {
+				id: result?.auction?.id ?? -1,
+				name: result?.auction?.title ?? '',
+				status: result?.auction?.status ?? '',
+			},
 			id: prop?.id ?? -1,
 			created: timestamp(prop?.createdDate),
 			proposer: prop?.address ?? '',
@@ -67,8 +73,10 @@ const formatData = (data: any): Proposal[] | undefined => {
 
 const query = `query GetProposalsByRoundId($id: Int!) {
   auction(id: $id) {
-    proposals {
-      auctionId
+    id
+		title
+		status
+		proposals {
       createdDate
       address
       id

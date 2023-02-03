@@ -2,6 +2,8 @@ export type House = {
 	created: number;
 	id: number;
 	name: string;
+	slug: string;
+	url: string;
 	description: string;
 	contract: string;
 	imageUrl: string;
@@ -18,18 +20,25 @@ export interface FullHouse extends House {
 }
 
 export type Round = {
-	houseId: number;
-	contract: string;
+	house: {
+		id: number;
+		name: string;
+		slug: string;
+		url: string;
+		contract: string;
+	};
 	snapshotBlock: number;
 	id: string;
 	created: number;
 	status: string;
 	name: string;
+	slug: string;
 	description: string;
-	winners: number;
+	url: string;
 	funding: {
 		amount: number;
 		currency: string;
+		winners: number;
 	};
 	startTime: number;
 	proposalDeadline: number;
@@ -40,13 +49,19 @@ export type Round = {
 		created: number;
 		title: string;
 		summary: string;
+		url: string;
 		votes: number;
 	}[];
 };
 
 export type Proposal = {
-	roundId: number;
+	round: {
+		id: number;
+		name: string;
+		status: string;
+	};
 	id: number;
+	url: string;
 	created: number;
 	proposer: string;
 	title: string;
@@ -58,7 +73,6 @@ export type Proposal = {
 		voter: string;
 		weight: number;
 	}[];
-	url: string;
 };
 
 export type Vote = {

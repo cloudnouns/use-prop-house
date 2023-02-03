@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { FullHouse } from '../types';
-import { fetchDataByQuery, timestamp } from '../utils';
+import { fetchDataByQuery, slug, timestamp } from '../utils';
 
 type UseHouseConfig = {
 	id: number;
@@ -64,7 +64,9 @@ const formatData = (data: any): FullHouse | undefined => {
 	return {
 		id: house?.id ?? -1,
 		created: timestamp(house?.createdDate),
-		name: house?.name || '',
+		name: house?.name ?? '',
+		slug: slug(house?.name),
+		url: 'https://prop.house/' + slug(house?.name),
 		description: house?.description ?? '',
 		imageUrl: house?.profileImageUrl ?? '',
 		contract: house?.contractAddress ?? '',

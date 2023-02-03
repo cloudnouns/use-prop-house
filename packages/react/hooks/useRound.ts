@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Round } from '../types';
-import { fetchDataByQuery, timestamp } from '../utils';
+import { fetchDataByQuery, slug, timestamp } from '../utils';
 
 type UseRoundConfig = {
 	id: number;
@@ -38,18 +38,27 @@ const formatData = (data: any): Round | undefined => {
 	}
 
 	return {
-		houseId: round?.community?.id ?? -1,
-		contract: round?.community?.contractAddress ?? '',
+		house: {
+			id: round?.community?.id ?? -1,
+			name: round?.community?.name ?? '',
+			slug: slug(round?.community?.name),
+			url: 'https://prop.house/' + slug(round?.community?.name),
+			contract: round?.community?.contractAddress ?? '',
+		},
 		snapshotBlock: Number(round?.balanceBlockTag) ?? -1,
 		id: round?.id ?? -1,
 		created: timestamp(round?.createdDate),
 		status: round?.status ?? '',
 		name: round?.title ?? '',
+		slug: slug(round?.title),
 		description: round?.description ?? '',
-		winners: round?.numWinners ?? 0,
+		url: `https://prop.house/${slug(round?.community?.name)}/${slug(
+			round?.title
+		)}`,
 		funding: {
 			amount: round?.fundingAmount ?? 0,
 			currency: round?.currencyType?.trim() ?? '',
+			winners: round?.numWinners ?? 0,
 		},
 		startTime: timestamp(round?.startTime),
 		proposalDeadline: timestamp(round?.proposalEndTime),
@@ -62,6 +71,7 @@ const formatData = (data: any): Round | undefined => {
 					created: timestamp(prop?.createdDate),
 					title: prop?.title ?? '',
 					summary: prop?.tldr ?? '',
+					url: 'https://prop.house/proposal/' + prop?.id,
 					votes: prop?.voteCount ?? 0,
 				};
 			}) ?? [],
@@ -72,6 +82,7 @@ const query = `query GetRoundById($id: Int!) {
   auction(id: $id) {
     community {
       id
+      name
       contractAddress
     }
     id
