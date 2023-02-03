@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { defineConfig } from 'tsup';
-import { peerDependencies } from './package.json';
+import PackageJSON from './package.json';
 
 const config = defineConfig({
 	entry: ['packages/react/index.ts'],
@@ -10,14 +10,17 @@ const config = defineConfig({
 	format: 'esm',
 	clean: true,
 	dts: true,
-	external: [...Object.keys(peerDependencies)],
+	external: [...Object.keys(PackageJSON.peerDependencies)],
 	async onSuccess() {
 		// copy package.json to dist
-		// const pkg = fs.readFileSync("./lib/package.json");
-		// fs.writeFileSync("./pkg/package.json", pkg);
+		const pkg: Record<string, unknown> = { ...PackageJSON };
+		delete pkg.scripts;
+		delete pkg.devDependencies;
+		fs.writeFileSync('./dist/package.json', JSON.stringify(pkg, null, 2));
+
 		// copy readme to dist
-		// const readme = fs.readFileSync('./lib/readme.md');
-		// fs.writeFileSync('./pkg/readme.md', readme);
+		const readme = fs.readFileSync('./readme.md');
+		fs.writeFileSync('./dist/readme.md', readme);
 	},
 });
 
