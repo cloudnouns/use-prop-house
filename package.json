@@ -7,10 +7,10 @@
 	"ethereum": "badublanc.eth",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cloudnouns/usePropHouse.git"
+		"url": "https://github.com/cloudnouns/use-prop-house.git"
 	},
 	"bugs": {
-		"url": "https://github.com/cloudnouns/usePropHouse/issues"
+		"url": "https://github.com/cloudnouns/use-prop-house/issues"
 	},
 	"type": "module",
 	"main": "./index.js",
