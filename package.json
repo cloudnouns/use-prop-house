@@ -1,29 +1,52 @@
 {
-  "name": "use-prop-house",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "peerDependencies": {
-    "react": ">=17.0.0",
-    "react-dom": ">=17.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^18.11.18",
-    "@types/react": "^18.0.27",
-    "@types/react-dom": "^18.0.10",
-    "@vitejs/plugin-react": "^3.1.0",
-    "autoprefixer": "^10.4.13",
-    "postcss": "^8.4.21",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwindcss": "^3.2.4",
-    "tsup": "^6.5.0",
-    "typescript": "^4.9.3",
-    "vite": "^4.1.0"
-  }
+	"license": "MIT",
+	"version": "0.0.0",
+	"name": "use-prop-house",
+	"description": "React hooks for Nouns Prop House",
+	"author": "Badu Blanc <badu@hey.com> (https://cloudnouns.com)",
+	"ethereum": "badublanc.eth",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cloudnouns/usePropHouse.git"
+	},
+	"bugs": {
+		"url": "https://github.com/cloudnouns/usePropHouse/issues"
+	},
+	"type": "module",
+	"main": "./index.js",
+	"types": "./index.d.ts",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"bundle": "tsup",
+		"preview": "vite preview"
+	},
+	"peerDependencies": {
+		"react": ">=17.0.0",
+		"react-dom": ">=17.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^18.11.18",
+		"@types/react": "^18.0.27",
+		"@types/react-dom": "^18.0.10",
+		"@vitejs/plugin-react": "^3.1.0",
+		"autoprefixer": "^10.4.13",
+		"postcss": "^8.4.21",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"tailwindcss": "^3.2.4",
+		"tsup": "^6.5.0",
+		"typescript": "^4.9.3",
+		"vite": "^4.1.0"
+	},
+	"exports": {
+		".": "./index.js"
+	},
+	"keywords": [
+		"nouns",
+		"prop house",
+		"cloudnouns",
+		"web3",
+		"ethereum"
+	]
 }
