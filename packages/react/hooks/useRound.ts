@@ -1,34 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import type { Round } from '../types';
-import { fetchDataByQuery, slug, timestamp } from '../utils';
+import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseRoundConfig = {
 	id: number;
 };
 
-export const useRound = ({ id }: UseRoundConfig): Round | undefined => {
-	if (!id) return;
+const emptyRound = {} as Round;
 
-	const [roundData, setRoundData] = useState<Round>();
+export const useRound = ({ id }: UseRoundConfig) => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [round, setRound] = useState<Round>();
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query, { id });
-			if (!data) {
-				setRoundData(undefined);
-				return;
-			}
-			setRoundData(formatData(data));
+			const clean = formatData(data);
+			if (!data) setRound(emptyRound);
+			else setRound(clean);
+			setIsLoading(false);
 		};
 
 		if (id) getData();
-		else setRoundData(undefined);
+		else {
+			setRound(emptyRound);
+			setIsLoading(false);
+		}
 	}, [id]);
 
-	return roundData;
+	return { isLoading, round };
 };
 
 const formatData = (data: any): Round | undefined => {
+	if (!data) return;
+
 	const { data: result, error } = data;
 	const round = result?.auction;
 
@@ -37,12 +44,12 @@ const formatData = (data: any): Round | undefined => {
 		return;
 	}
 
-	return {
+	const formattedRound: Round = {
 		house: {
 			id: round?.community?.id ?? -1,
 			name: round?.community?.name ?? '',
 			slug: slug(round?.community?.name),
-			url: 'https://prop.house/' + slug(round?.community?.name),
+			url: url([round?.community?.name]),
 			contract: round?.community?.contractAddress ?? '',
 		},
 		snapshotBlock: Number(round?.balanceBlockTag) ?? -1,
@@ -52,9 +59,7 @@ const formatData = (data: any): Round | undefined => {
 		name: round?.title ?? '',
 		slug: slug(round?.title),
 		description: round?.description ?? '',
-		url: `https://prop.house/${slug(round?.community?.name)}/${slug(
-			round?.title
-		)}`,
+		url: url([round?.community?.name, round?.title]),
 		funding: {
 			amount: round?.fundingAmount ?? 0,
 			currency: round?.currencyType?.trim() ?? '',
@@ -71,11 +76,19 @@ const formatData = (data: any): Round | undefined => {
 					created: timestamp(prop?.createdDate),
 					title: prop?.title ?? '',
 					summary: prop?.tldr ?? '',
-					url: 'https://prop.house/proposal/' + prop?.id,
+					url: url(['proposal', String(prop?.id)]),
 					votes: prop?.voteCount ?? 0,
 				};
 			}) ?? [],
 	};
+
+	if (Date.now() >= formattedRound.proposalDeadline) {
+		formattedRound.proposals = formattedRound.proposals.sort(
+			(a, b) => b.votes - a.votes
+		);
+	}
+
+	return formattedRound;
 };
 
 const query = `query GetRoundById($id: Int!) {

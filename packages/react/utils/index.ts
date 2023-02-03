@@ -1,3 +1,4 @@
+const baseUrl = 'https://prop.house';
 const queryUrl = 'https://prod.backend.prop.house/graphql';
 
 export const fetchDataByQuery = async (
@@ -25,4 +26,10 @@ export const timestamp = (date: string): number => {
 export const slug = (str: string): string => {
 	if (!str) return '';
 	return str.toLowerCase().replaceAll(' ', '-') ?? '';
+};
+
+export const url = (parts: string[] = []): string => {
+	if (!parts.length) return '';
+	const path = parts.map((part) => slug(part)).join('/');
+	return baseUrl + '/' + path;
 };

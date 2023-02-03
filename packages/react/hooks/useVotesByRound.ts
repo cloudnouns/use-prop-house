@@ -1,37 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import type { Vote } from '../types';
-import { fetchDataByQuery, timestamp } from '../utils';
+import { fetchDataByQuery, timestamp, url } from '../utils';
 
-type UseRoundVotesConfig = {
+type UseVotesByRoundConfig = {
 	roundId: number;
 };
 
-export const useRoundVotes = ({ roundId }: UseRoundVotesConfig): Vote[] => {
-	if (!roundId) return [];
-
+export const useVotesByRound = ({ roundId }: UseVotesByRoundConfig) => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [votes, setVotes] = useState<Vote[]>([]);
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query, { id: roundId });
-			if (!data) {
-				setVotes([]);
-				return;
-			} else {
-				const clean = formatData(data);
-				if (!clean) setVotes([]);
-				else setVotes(clean);
-			}
+			const clean = formatData(data);
+			if (!clean) setVotes([]);
+			else setVotes(clean);
+			setIsLoading(false);
 		};
 
 		if (roundId) getData();
-		else setVotes([]);
+		else {
+			setVotes([]);
+			setIsLoading(false);
+		}
 	}, [roundId]);
 
-	return votes;
+	return { isLoading, votes };
 };
 
 const formatData = (data: any): Vote[] | undefined => {
+	if (!data) return;
+
 	const { data: result, error } = data;
 	const props = result?.auction?.proposals ?? [];
 
@@ -40,7 +42,7 @@ const formatData = (data: any): Vote[] | undefined => {
 		return;
 	}
 
-	return props
+	const formattedVotes = props
 		?.map((prop: any) => {
 			return prop?.votes
 				?.filter((vote: any) => vote?.signatureState === 'VALIDATED')
@@ -52,13 +54,15 @@ const formatData = (data: any): Vote[] | undefined => {
 						proposal: {
 							id: prop?.id,
 							title: prop?.title,
-							url: 'https://prop.house/proposal/' + prop?.id,
+							url: url(['proposal', String(prop?.id)]),
 						},
 					};
 				});
 		})
 		.flat()
-		.sort((a: any, b: any) => b.created - a.created, 0);
+		.sort((a: Vote, b: Vote) => b.created - a.created, 0);
+
+	return formattedVotes;
 };
 
 const query = `query GetVotesByRoundId ($id: Int!) {

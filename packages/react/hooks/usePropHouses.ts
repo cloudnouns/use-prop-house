@@ -1,28 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import type { House } from '../types';
-import { fetchDataByQuery, slug, timestamp } from '../utils';
+import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
-export const useHouses = (): House[] => {
+export const usePropHouses = () => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [houses, setHouses] = useState<House[]>([]);
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query);
-			if (!data) setHouses([]);
-			else {
-				const clean = formatData(data);
-				if (!clean) setHouses([]);
-				else setHouses(clean);
-			}
+			const clean = formatData(data);
+			if (!clean) setHouses([]);
+			else setHouses(clean);
+			setIsLoading(false);
 		};
 
 		getData();
 	}, []);
 
-	return houses;
+	return { isLoading, houses };
 };
 
 const formatData = (data: any): House[] | undefined => {
+	if (!data) return;
+
 	const { data: result, error } = data;
 	const houses: any[] = result?.communities ?? [];
 
@@ -37,7 +40,7 @@ const formatData = (data: any): House[] | undefined => {
 			created: timestamp(house?.createdDate),
 			name: house?.name ?? '',
 			slug: slug(house?.name),
-			url: 'https://prop.house/' + slug(house?.name),
+			url: url([house?.name]),
 			description: house?.description ?? '',
 			imageUrl: house?.profileImageUrl ?? '',
 			contract: house?.contractAddress ?? '',

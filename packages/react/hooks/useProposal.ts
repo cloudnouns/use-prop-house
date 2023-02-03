@@ -1,34 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import type { Proposal } from '../types';
-import { fetchDataByQuery, timestamp } from '../utils';
+import { fetchDataByQuery, timestamp, url } from '../utils';
 
-type UseRoundConfig = {
+type UseProposalConfig = {
 	id: number;
 };
 
-export const useProposal = ({ id }: UseRoundConfig): Proposal | undefined => {
-	if (!id) return;
+const emptyProposal = {} as Proposal;
 
-	const [proposal, setProposal] = useState<Proposal>();
+export const useProposal = ({ id }: UseProposalConfig) => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [proposal, setProposal] = useState<Proposal>(emptyProposal);
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query, { id });
-			if (!data) {
-				setProposal(undefined);
-				return;
-			}
-			setProposal(formatData(data));
+			const clean = formatData(data);
+			if (!clean) setProposal(emptyProposal);
+			else setProposal(clean);
+			setIsLoading(false);
 		};
 
 		if (id) getData();
-		else setProposal(undefined);
+		else {
+			setProposal(emptyProposal);
+			setIsLoading(false);
+		}
 	}, [id]);
 
-	return proposal;
+	return { isLoading, proposal };
 };
 
 const formatData = (data: any): Proposal | undefined => {
+	if (!data) return;
+
 	const { data: result, error } = data;
 	const prop = result?.proposal;
 
@@ -37,7 +44,7 @@ const formatData = (data: any): Proposal | undefined => {
 		return;
 	}
 
-	return {
+	const proposal = {
 		round: {
 			id: prop?.auction?.id ?? -1,
 			name: prop?.auction?.title ?? '',
@@ -58,8 +65,16 @@ const formatData = (data: any): Proposal | undefined => {
 					weight: vote?.weight ?? 0,
 				};
 			}) ?? [],
-		url: 'https://prop.house/proposal/' + prop?.id,
+		url: url(['proposal', String(prop?.id)]),
 	};
+
+	if (proposal.votes?.length) {
+		proposal.votes = proposal.votes.sort(
+			(a: any, b: any) => b.created - a.created
+		);
+	}
+
+	return proposal;
 };
 
 const query = `query GetProposalById($id: Int!) {

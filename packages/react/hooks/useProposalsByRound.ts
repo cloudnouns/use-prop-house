@@ -1,39 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import type { Proposal } from '../types';
-import { fetchDataByQuery, timestamp } from '../utils';
+import { fetchDataByQuery, timestamp, url } from '../utils';
 
-type UseRoundProposalsConfig = {
+type UseProposalsByRoundConfig = {
 	roundId: number;
 };
 
-export const useRoundProposals = ({
-	roundId,
-}: UseRoundProposalsConfig): Proposal[] => {
-	if (!roundId) return [];
-
+export const useProposalsByRound = ({ roundId }: UseProposalsByRoundConfig) => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [proposals, setProposals] = useState<Proposal[]>([]);
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query, { id: roundId });
-			if (!data) {
-				setProposals([]);
-				return;
-			} else {
-				const clean = formatData(data);
-				if (!clean) setProposals([]);
-				else setProposals(clean);
-			}
+			const clean = formatData(data);
+			if (!clean) setProposals([]);
+			else setProposals(clean);
+			setIsLoading(false);
 		};
 
 		if (roundId) getData();
-		else setProposals([]);
+		else {
+			setProposals([]);
+			setIsLoading(false);
+		}
 	}, [roundId]);
 
-	return proposals;
+	return { isLoading, proposals };
 };
 
 const formatData = (data: any): Proposal[] | undefined => {
+	if (!data) return;
+
 	const { data: result, errors } = data;
 	const props = result?.auction?.proposals ?? [];
 
@@ -43,7 +43,7 @@ const formatData = (data: any): Proposal[] | undefined => {
 	}
 
 	const formattedProps: Proposal[] = props.map((prop: any) => {
-		return {
+		const proposal = {
 			round: {
 				id: result?.auction?.id ?? -1,
 				name: result?.auction?.title ?? '',
@@ -64,8 +64,16 @@ const formatData = (data: any): Proposal[] | undefined => {
 						weight: vote?.weight ?? 0,
 					};
 				}) ?? [],
-			url: 'https://prop.house/proposal/' + prop?.id,
+			url: url(['proposal', String(prop?.id)]),
 		};
+
+		if (proposal.votes?.length) {
+			proposal.votes = proposal.votes.sort(
+				(a: any, b: any) => b.created - a.created
+			);
+		}
+
+		return proposal;
 	});
 
 	return formattedProps ?? [];

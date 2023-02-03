@@ -1,36 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-	useHouse,
-	useHouses,
 	useRound,
-	useHouseRounds,
-	useOpenRounds,
+	useRoundsByHouse,
+	useRoundsByStatus,
+	useVotesByRound,
+	useProposalsByRound,
 	useProposal,
-	useRoundProposals,
-	useRoundVotes,
-	useUpcomingRounds,
-	useVotingRounds,
+	useHouse,
+	usePropHouses,
 } from '../packages/react';
 
+type Status = 'open' | 'upcoming' | 'voting' | 'closed';
+
 const App = () => {
-	const houses = useHouses();
-	const house = useHouse({ id: 21 });
-	const round = useRound({ id: 132 });
-	const proposal = useProposal({ id: 3423 });
-	const proposals = useRoundProposals({ roundId: 132 });
-	const votes = useRoundVotes({ roundId: 58 });
-	// const rounds = useHouseRounds({ houseId: 21 });
-	// const rounds = useUpcomingRounds();
-	// const rounds = useOpenRounds();
-	const rounds = useVotingRounds();
+	const [status, setStatus] = useState<Status>('open');
+	// const rounds = useRoundsByHouse({ houseId: 21, status });
+	// const { isLoading, house } = useHouse({ id: 21 });
+	const { isLoading, rounds: data } = useRoundsByStatus({ status });
 
 	useEffect(() => {
-		if (rounds) console.log(rounds);
-	}, [rounds]);
+		if (data) console.log(data);
+	}, [data]);
 
 	return (
 		<div>
-			<p>howdy</p>
+			<button onClick={() => setStatus('open')}>Open Rounds</button>
+			<button onClick={() => setStatus('upcoming')}>Upcoming Rounds</button>
+			<button onClick={() => setStatus('voting')}>Voting Rounds</button>
+			<button onClick={() => setStatus('closed')}>Closed Rounds</button>
+
+			{isLoading ? <p>loading data</p> : <p>{JSON.stringify(data, null, 2)}</p>}
 		</div>
 	);
 };

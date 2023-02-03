@@ -1,34 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import type { FullHouse } from '../types';
-import { fetchDataByQuery, slug, timestamp } from '../utils';
+import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseHouseConfig = {
 	id: number;
 };
 
-export const useHouse = ({ id }: UseHouseConfig): FullHouse | undefined => {
-	if (!id) return;
+const emptyHouse = {} as FullHouse;
 
-	const [houseData, setHouseData] = useState<FullHouse>();
+export const useHouse = ({ id }: UseHouseConfig) => {
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [house, setHouse] = useState<FullHouse>(emptyHouse);
 
 	useEffect(() => {
+		setIsLoading(true);
+
 		const getData = async () => {
 			const data = await fetchDataByQuery(query, { id });
-			if (!data) {
-				setHouseData(undefined);
-				return;
-			}
-			setHouseData(formatData(data));
+			const clean = formatData(data);
+			if (!clean) setHouse(emptyHouse);
+			else setHouse(clean);
+			setIsLoading(false);
 		};
 
 		if (id) getData();
-		else setHouseData(undefined);
+		else {
+			setHouse(emptyHouse);
+			setIsLoading(false);
+		}
 	}, [id]);
 
-	return houseData;
+	return { isLoading, house };
 };
 
 const formatData = (data: any): FullHouse | undefined => {
+	if (!data) return;
+
 	const { data: result, error } = data;
 	const house = result?.community;
 
@@ -66,7 +73,7 @@ const formatData = (data: any): FullHouse | undefined => {
 		created: timestamp(house?.createdDate),
 		name: house?.name ?? '',
 		slug: slug(house?.name),
-		url: 'https://prop.house/' + slug(house?.name),
+		url: url([house?.name]),
 		description: house?.description ?? '',
 		imageUrl: house?.profileImageUrl ?? '',
 		contract: house?.contractAddress ?? '',
