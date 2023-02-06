@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Round } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseRoundConfig = {
@@ -9,40 +10,45 @@ type UseRoundConfig = {
 const emptyRound = {} as Round;
 
 export const useRound = ({ id }: UseRoundConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [round, setRound] = useState<Round>();
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Round>(
+		setRound,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id });
-			const clean = formatData(data);
-			if (!data) setRound(emptyRound);
-			else setRound(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id });
+			const { data, error } = formatData(response, emptyRound);
+			if (error) dispatch.err(error, data);
+			else dispatch.update(data);
 		};
 
 		if (id) getData();
-		else {
-			setRound(emptyRound);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_id', emptyRound);
 	}, [id]);
 
-	return { isLoading, round };
+	return { round, isLoading, isError, error };
 };
 
-const formatData = (data: any): Round | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: Round
+): { data: Round; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error } = data;
+	const { data: result, errors: error } = data;
 	const round = result?.auction;
 
-	if (error) {
-		// console.error(error);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const formattedRound: Round = {
 		house: {
@@ -88,7 +94,7 @@ const formatData = (data: any): Round | undefined => {
 		);
 	}
 
-	return formattedRound;
+	return { data: formattedRound };
 };
 
 const query = `query GetRoundById($id: Int!) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Vote } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
 
 type UseVotesByRoundConfig = {
@@ -7,40 +8,45 @@ type UseVotesByRoundConfig = {
 };
 
 export const useVotesByRound = ({ roundId }: UseVotesByRoundConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [votes, setVotes] = useState<Vote[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Vote[]>(
+		setVotes,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id: roundId });
-			const clean = formatData(data);
-			if (!clean) setVotes([]);
-			else setVotes(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id: roundId });
+			const { data, error } = formatData(response, []);
+			if (error) dispatch.err(error, data);
+			else dispatch.update(data);
 		};
 
 		if (roundId) getData();
-		else {
-			setVotes([]);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_id', []);
 	}, [roundId]);
 
-	return { isLoading, votes };
+	return { votes, isLoading, isError, error };
 };
 
-const formatData = (data: any): Vote[] | undefined => {
-	if (!data) return;
+const formatData = <T>(
+	data: any,
+	fallback: Vote[]
+): { data: Vote[]; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error } = data;
+	const { data: result, errors: error } = data;
 	const props = result?.auction?.proposals ?? [];
 
-	if (error) {
-		// console.error(error);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const formattedVotes = props
 		?.map((prop: any) => {
@@ -62,7 +68,7 @@ const formatData = (data: any): Vote[] | undefined => {
 		.flat()
 		.sort((a: Vote, b: Vote) => b.created - a.created, 0);
 
-	return formattedVotes;
+	return { data: formattedVotes };
 };
 
 const query = `query GetVotesByRoundId ($id: Int!) {

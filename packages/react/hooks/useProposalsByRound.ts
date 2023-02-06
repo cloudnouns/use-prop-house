@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Proposal } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
 
 type UseProposalsByRoundConfig = {
@@ -7,40 +8,45 @@ type UseProposalsByRoundConfig = {
 };
 
 export const useProposalsByRound = ({ roundId }: UseProposalsByRoundConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [proposals, setProposals] = useState<Proposal[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Proposal[]>(
+		setProposals,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id: roundId });
-			const clean = formatData(data);
-			if (!clean) setProposals([]);
-			else setProposals(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id: roundId });
+			const { data, error } = formatData(response, []);
+			if (error) dispatch.err(error, data);
+			else dispatch.update(data);
 		};
 
 		if (roundId) getData();
-		else {
-			setProposals([]);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_id', []);
 	}, [roundId]);
 
-	return { isLoading, proposals };
+	return { proposals, isLoading, isError, error };
 };
 
-const formatData = (data: any): Proposal[] | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: Proposal[]
+): { data: Proposal[]; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, errors } = data;
+	const { data: result, errors: error } = data;
 	const props = result?.auction?.proposals ?? [];
 
-	if (errors) {
-		console.error(errors);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const formattedProps: Proposal[] = props.map((prop: any) => {
 		const proposal = {
@@ -76,7 +82,7 @@ const formatData = (data: any): Proposal[] | undefined => {
 		return proposal;
 	});
 
-	return formattedProps ?? [];
+	return { data: formattedProps };
 };
 
 const query = `query GetProposalsByRoundId($id: Int!) {

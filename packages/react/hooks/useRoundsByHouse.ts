@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Round } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseRoundsByHouseConfig = {
@@ -11,46 +12,53 @@ export const useRoundsByHouse = ({
 	houseId,
 	status,
 }: UseRoundsByHouseConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [rounds, setRounds] = useState<Round[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Round[]>(
+		setRounds,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id: houseId });
-			const clean = formatData(data);
-			if (!clean) setRounds([]);
-			else if (status) {
-				const filteredRounds = clean.filter((r) => {
-					return status === r.status.toLowerCase();
-				});
-				setRounds(filteredRounds);
-			} else setRounds(clean);
-
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id: houseId });
+			const { data, error } = formatData(response, []);
+			if (error) setRounds(data);
+			else {
+				let rounds = data;
+				if (status) {
+					rounds = data.filter((r) => {
+						return status === r.status.toLowerCase();
+					});
+				}
+				dispatch.update(rounds);
+			}
 		};
 
 		if (houseId) getData();
-		else {
-			setRounds([]);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_id', []);
 	}, [houseId, status]);
 
-	return { isLoading, rounds };
+	return { rounds, isLoading, isError, error };
 };
 
-const formatData = (data: any): Round[] | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: Round[]
+): { data: Round[]; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error } = data;
+	const { data: result, errors: error } = data;
 	const rounds = result?.community?.auctions ?? [];
 
-	if (error) {
-		// console.error(error);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const formattedRounds: Round[] = rounds.map((round: any) => {
 		const formattedRound: Round = {
@@ -100,7 +108,7 @@ const formatData = (data: any): Round[] | undefined => {
 		return formattedRound;
 	});
 
-	return formattedRounds ?? [];
+	return { data: formattedRounds };
 };
 
 const query = `query GetRoundsByHouseId($id: Int!) {
