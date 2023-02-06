@@ -16,12 +16,19 @@ const App = () => {
 	const [status, setStatus] = useState<Status>('open');
 	// const rounds = useRoundsByHouse({ houseId: 21, status });
 	// const { isLoading, house } = useHouse({ id: 21 });
-	const { isLoading, rounds: data } = useRoundsByStatus({ status });
+	const {
+		votes: data,
+		isLoading,
+		isError,
+		error,
+	} = useVotesByRound({ roundId: 137 });
 
 	useEffect(() => {
 		if (data) console.log(data);
 	}, [data]);
 
+	if (isLoading) return <p>loading data</p>;
+	if (isError) return <p>error: {error}</p>;
 	return (
 		<div>
 			<button onClick={() => setStatus('open')}>Open Rounds</button>
@@ -29,7 +36,7 @@ const App = () => {
 			<button onClick={() => setStatus('voting')}>Voting Rounds</button>
 			<button onClick={() => setStatus('closed')}>Closed Rounds</button>
 
-			{isLoading ? <p>loading data</p> : <p>{JSON.stringify(data, null, 2)}</p>}
+			<p>{JSON.stringify(data, null, 2)}</p>
 		</div>
 	);
 };

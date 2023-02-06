@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { FullHouse } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseHouseConfig = {
@@ -9,40 +10,45 @@ type UseHouseConfig = {
 const emptyHouse = {} as FullHouse;
 
 export const useHouse = ({ id }: UseHouseConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [house, setHouse] = useState<FullHouse>(emptyHouse);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<FullHouse>(
+		setHouse,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id });
-			const clean = formatData(data);
-			if (!clean) setHouse(emptyHouse);
-			else setHouse(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id });
+			const { data, error } = formatData(response, emptyHouse);
+			if (error) dispatch.err(error, emptyHouse);
+			else dispatch.update(data);
 		};
 
-		if (id) getData();
-		else {
-			setHouse(emptyHouse);
-			setIsLoading(false);
-		}
+		if (Number.isInteger(id) && id > 0) getData();
+		else dispatch.err('invalid_id', emptyHouse);
 	}, [id]);
 
-	return { isLoading, house };
+	return { house, isLoading, isError, error };
 };
 
-const formatData = (data: any): FullHouse | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: FullHouse
+): { data: FullHouse; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error } = data;
+	const { data: result, errors: error } = data;
 	const house = result?.community;
 
-	if (error) {
-		// console.error(error);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const rounds = house?.auctions?.map((round: any) => round);
 	for (const round of rounds) {
@@ -68,7 +74,7 @@ const formatData = (data: any): FullHouse | undefined => {
 		};
 	});
 
-	return {
+	const formattedHouse = {
 		id: house?.id ?? -1,
 		created: timestamp(house?.createdDate),
 		name: house?.name ?? '',
@@ -84,6 +90,8 @@ const formatData = (data: any): FullHouse | undefined => {
 				?.reduce((a: number, b: number) => a + b, 0) ?? 0,
 		funding,
 	};
+
+	return { data: formattedHouse };
 };
 
 const query = `query GetHouseById($id: Int!) {

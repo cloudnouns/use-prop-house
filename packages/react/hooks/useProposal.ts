@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Proposal } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
 
 type UseProposalConfig = {
@@ -9,40 +10,45 @@ type UseProposalConfig = {
 const emptyProposal = {} as Proposal;
 
 export const useProposal = ({ id }: UseProposalConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [proposal, setProposal] = useState<Proposal>(emptyProposal);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Proposal>(
+		setProposal,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async () => {
-			const data = await fetchDataByQuery(query, { id });
-			const clean = formatData(data);
-			if (!clean) setProposal(emptyProposal);
-			else setProposal(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { id });
+			const { data, error } = formatData(response, emptyProposal);
+			if (error) dispatch.err(error, data);
+			else dispatch.update(data);
 		};
 
 		if (id) getData();
-		else {
-			setProposal(emptyProposal);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_id', emptyProposal);
 	}, [id]);
 
-	return { isLoading, proposal };
+	return { proposal, isLoading, isError, error };
 };
 
-const formatData = (data: any): Proposal | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: Proposal
+): { data: Proposal; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error } = data;
+	const { data: result, errors: error } = data;
 	const prop = result?.proposal;
 
-	if (error) {
-		// console.error(error);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
 	const proposal = {
 		round: {
@@ -74,7 +80,7 @@ const formatData = (data: any): Proposal | undefined => {
 		);
 	}
 
-	return proposal;
+	return { data: proposal };
 };
 
 const query = `query GetProposalById($id: Int!) {

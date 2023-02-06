@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Round } from '../types';
+import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 type UseRoundsByStatusConfig = {
@@ -13,43 +14,48 @@ export const useRoundsByStatus = ({
 	limit = 10,
 	offset = 0,
 }: UseRoundsByStatusConfig) => {
-	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [rounds, setRounds] = useState<Round[]>([]);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [isError, setIsError] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	const dispatch = new Dispatcher<Round[]>(
+		setRounds,
+		setIsLoading,
+		setIsError,
+		setError
+	);
 
 	useEffect(() => {
-		setIsLoading(true);
+		dispatch.reset();
 
 		const getData = async (status: string) => {
 			status = status.charAt(0).toUpperCase() + status.slice(1);
-			const data = await fetchDataByQuery(query, { status, limit, offset });
-			const clean = formatData(data);
-			if (!clean) setRounds([]);
-			else setRounds(clean);
-			setIsLoading(false);
+			const response = await fetchDataByQuery(query, { status, limit, offset });
+			const { data, error } = formatData(response, []);
+			if (error) dispatch.err(error, data);
+			else dispatch.update(data);
 		};
 
 		if (status && typeof status === 'string') getData(status);
-		else {
-			setRounds([]);
-			setIsLoading(false);
-		}
+		else dispatch.err('invalid_status', []);
 	}, [status, limit, offset]);
 
-	return { isLoading, rounds };
+	return { rounds, isLoading, isError, error };
 };
 
-const formatData = (data: any): Round[] | undefined => {
-	if (!data) return;
+const formatData = (
+	data: any,
+	fallback: Round[]
+): { data: Round[]; error?: string } => {
+	if (!data) return { data: fallback, error: 'query_failed' };
 
-	const { data: result, error: errors } = data;
+	const { data: result, errors: error } = data;
 	const rounds = result?.auctionsByStatus;
 
-	if (errors) {
-		// console.error(errors);
-		return;
-	}
+	if (error) return { data: fallback, error: JSON.stringify(error) };
 
-	return rounds?.map((round: any) => {
+	const formattedRounds = rounds?.map((round: any) => {
 		const formattedRound: Round = {
 			house: {
 				id: round?.community?.id ?? -1,
@@ -96,6 +102,8 @@ const formatData = (data: any): Round[] | undefined => {
 
 		return formattedRound;
 	});
+
+	return { data: formattedRounds };
 };
 
 const query = `query GetRoundByStatus($status: AuctionStatus!, $limit: Int, $offset: Int) {
