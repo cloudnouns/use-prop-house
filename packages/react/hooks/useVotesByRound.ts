@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Vote } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
@@ -9,16 +9,12 @@ type UseVotesByRoundConfig = {
 
 export const useVotesByRound = ({ roundId }: UseVotesByRoundConfig) => {
 	const [votes, setVotes] = useState<Vote[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Vote[]>(
-		setVotes,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Vote[]>(setVotes, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -32,9 +28,9 @@ export const useVotesByRound = ({ roundId }: UseVotesByRoundConfig) => {
 
 		if (roundId) getData();
 		else dispatch.err('invalid_id', []);
-	}, [roundId]);
+	}, [roundId, dispatch]);
 
-	return { votes, isLoading, isError, error };
+	return { data: votes, error, isLoading };
 };
 
 const formatData = <T>(

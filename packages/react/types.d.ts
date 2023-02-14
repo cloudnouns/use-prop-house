@@ -1,4 +1,4 @@
-export type House = {
+export type BaseHouse = {
 	created: number;
 	id: number;
 	name: string;
@@ -9,7 +9,7 @@ export type House = {
 	imageUrl: string;
 };
 
-export interface FullHouse extends House {
+export interface House extends BaseHouse {
 	rounds: number[];
 	totalProposals: number;
 	funding: {

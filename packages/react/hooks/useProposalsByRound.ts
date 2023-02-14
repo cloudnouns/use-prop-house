@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Proposal } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
@@ -9,16 +9,12 @@ type UseProposalsByRoundConfig = {
 
 export const useProposalsByRound = ({ roundId }: UseProposalsByRoundConfig) => {
 	const [proposals, setProposals] = useState<Proposal[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Proposal[]>(
-		setProposals,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Proposal[]>(setProposals, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -32,9 +28,9 @@ export const useProposalsByRound = ({ roundId }: UseProposalsByRoundConfig) => {
 
 		if (roundId) getData();
 		else dispatch.err('invalid_id', []);
-	}, [roundId]);
+	}, [roundId, dispatch]);
 
-	return { proposals, isLoading, isError, error };
+	return { data: proposals, error, isLoading };
 };
 
 const formatData = (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Proposal } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, timestamp, url } from '../utils';
@@ -11,16 +11,12 @@ const emptyProposal = {} as Proposal;
 
 export const useProposal = ({ id }: UseProposalConfig) => {
 	const [proposal, setProposal] = useState<Proposal>(emptyProposal);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Proposal>(
-		setProposal,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Proposal>(setProposal, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -34,9 +30,9 @@ export const useProposal = ({ id }: UseProposalConfig) => {
 
 		if (id) getData();
 		else dispatch.err('invalid_id', emptyProposal);
-	}, [id]);
+	}, [id, dispatch]);
 
-	return { proposal, isLoading, isError, error };
+	return { data: proposal, error, isLoading };
 };
 
 const formatData = (

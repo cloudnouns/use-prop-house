@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import type { FullHouse } from '../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { House } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
@@ -7,20 +7,16 @@ type UseHouseConfig = {
 	id: number;
 };
 
-const emptyHouse = {} as FullHouse;
+const emptyHouse = {} as House;
 
 export const useHouse = ({ id }: UseHouseConfig) => {
-	const [house, setHouse] = useState<FullHouse>(emptyHouse);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
+	const [house, setHouse] = useState<House>(emptyHouse);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<FullHouse>(
-		setHouse,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<House>(setHouse, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -34,15 +30,15 @@ export const useHouse = ({ id }: UseHouseConfig) => {
 
 		if (Number.isInteger(id) && id > 0) getData();
 		else dispatch.err('invalid_id', emptyHouse);
-	}, [id]);
+	}, [id, dispatch]);
 
-	return { house, isLoading, isError, error };
+	return { data: house, error, isLoading };
 };
 
 const formatData = (
 	data: any,
-	fallback: FullHouse
-): { data: FullHouse; error?: string } => {
+	fallback: House
+): { data: House; error?: string } => {
 	if (!data) return { data: fallback, error: 'query_failed' };
 
 	const { data: result, errors: error } = data;
@@ -74,7 +70,7 @@ const formatData = (
 		};
 	});
 
-	const formattedHouse = {
+	const formattedHouse: House = {
 		id: house?.id ?? -1,
 		created: timestamp(house?.createdDate),
 		name: house?.name ?? '',

@@ -1,20 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import type { House } from '../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { BaseHouse } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
 export const usePropHouses = () => {
-	const [houses, setHouses] = useState<House[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
+	const [houses, setHouses] = useState<BaseHouse[]>([]);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<House[]>(
-		setHouses,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<BaseHouse[]>(setHouses, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -27,15 +23,15 @@ export const usePropHouses = () => {
 		};
 
 		getData();
-	}, []);
+	}, [dispatch]);
 
-	return { houses, isLoading, isError, error };
+	return { data: houses, error, isLoading };
 };
 
 const formatData = (
 	data: any,
-	fallback: House[]
-): { data: House[]; error?: string } => {
+	fallback: BaseHouse[]
+): { data: BaseHouse[]; error?: string } => {
 	if (!data) return { data: fallback, error: 'query_failed' };
 
 	const { data: result, errors: error } = data;
@@ -43,7 +39,7 @@ const formatData = (
 
 	if (error) return { data: fallback, error: JSON.stringify(error) };
 
-	const formattedHouses = houses?.map((house: any): House => {
+	const formattedHouses = houses?.map((house: any): BaseHouse => {
 		return {
 			id: house?.id ?? -1,
 			created: timestamp(house?.createdDate),
