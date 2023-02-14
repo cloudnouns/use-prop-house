@@ -16,7 +16,7 @@ const config = defineConfig({
 			(arg) => arg === '--env.PKG_VERSION'
 		);
 
-		if (!vArgIndex) {
+		if (vArgIndex < 0) {
 			throw new Error('Package version not found.');
 		}
 
