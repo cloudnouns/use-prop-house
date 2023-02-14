@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Round } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
+type Status = 'upcoming' | 'open' | 'voting' | 'closed';
+
 type UseRoundsByStatusConfig = {
-	status: 'upcoming' | 'open' | 'voting' | 'closed';
+	status: Status;
 	limit?: number;
 	offset?: number;
 };
@@ -15,16 +17,12 @@ export const useRoundsByStatus = ({
 	offset = 0,
 }: UseRoundsByStatusConfig) => {
 	const [rounds, setRounds] = useState<Round[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Round[]>(
-		setRounds,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Round[]>(setRounds, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -39,9 +37,9 @@ export const useRoundsByStatus = ({
 
 		if (status && typeof status === 'string') getData(status);
 		else dispatch.err('invalid_status', []);
-	}, [status, limit, offset]);
+	}, [status, limit, offset, dispatch]);
 
-	return { rounds, isLoading, isError, error };
+	return { data: rounds, error, isLoading };
 };
 
 const formatData = (

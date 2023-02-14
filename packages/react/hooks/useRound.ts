@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Round } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
@@ -11,16 +11,12 @@ const emptyRound = {} as Round;
 
 export const useRound = ({ id }: UseRoundConfig) => {
 	const [round, setRound] = useState<Round>();
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Round>(
-		setRound,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Round>(setRound, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -34,9 +30,9 @@ export const useRound = ({ id }: UseRoundConfig) => {
 
 		if (id) getData();
 		else dispatch.err('invalid_id', emptyRound);
-	}, [id]);
+	}, [id, dispatch]);
 
-	return { round, isLoading, isError, error };
+	return { data: round, error, isLoading };
 };
 
 const formatData = (

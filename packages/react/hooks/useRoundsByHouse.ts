@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Round } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
+type Status = 'upcoming' | 'open' | 'voting' | 'closed';
+
 type UseRoundsByHouseConfig = {
 	houseId: number;
-	status?: 'upcoming' | 'open' | 'voting' | 'closed';
+	status?: Status | Status[];
 };
 
 export const useRoundsByHouse = ({
@@ -13,16 +15,12 @@ export const useRoundsByHouse = ({
 	status,
 }: UseRoundsByHouseConfig) => {
 	const [rounds, setRounds] = useState<Round[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isError, setIsError] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const dispatch = new Dispatcher<Round[]>(
-		setRounds,
-		setIsLoading,
-		setIsError,
-		setError
-	);
+	const dispatch = useMemo(() => {
+		return new Dispatcher<Round[]>(setRounds, setIsLoading, setError);
+	}, []);
 
 	useEffect(() => {
 		dispatch.reset();
@@ -35,6 +33,9 @@ export const useRoundsByHouse = ({
 				let rounds = data;
 				if (status) {
 					rounds = data.filter((r) => {
+						if (Array.isArray(status)) {
+							return status.includes(r.status.toLowerCase() as Status);
+						}
 						return status === r.status.toLowerCase();
 					});
 				}
@@ -44,9 +45,9 @@ export const useRoundsByHouse = ({
 
 		if (houseId) getData();
 		else dispatch.err('invalid_id', []);
-	}, [houseId, status]);
+	}, [houseId, JSON.stringify(status), dispatch]);
 
-	return { rounds, isLoading, isError, error };
+	return { data: rounds, error, isLoading };
 };
 
 const formatData = (
