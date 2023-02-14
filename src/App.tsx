@@ -10,35 +10,40 @@ import {
 	usePropHouses,
 } from '../packages/react';
 
-type Status = 'open' | 'upcoming' | 'voting' | 'closed';
+export default function App() {
+	const { data, error, isLoading } = useRoundsByHouse({
+		houseId: 1,
+		status: ['open', 'voting'], // omit to include all statuses
+	});
 
-const App = () => {
-	const [status, setStatus] = useState<Status>('open');
-	// const rounds = useRoundsByHouse({ houseId: 21, status });
-	// const { isLoading, house } = useHouse({ id: 21 });
-	const {
-		votes: data,
-		isLoading,
-		isError,
-		error,
-	} = useVotesByRound({ roundId: 137 });
+	if (isLoading) return <p>Loading data...</p>;
+	if (error) return <p>Error: {error}</p>;
 
-	useEffect(() => {
-		if (data) console.log(data);
-	}, [data]);
-
-	if (isLoading) return <p>loading data</p>;
-	if (isError) return <p>error: {error}</p>;
 	return (
-		<div>
-			<button onClick={() => setStatus('open')}>Open Rounds</button>
-			<button onClick={() => setStatus('upcoming')}>Upcoming Rounds</button>
-			<button onClick={() => setStatus('voting')}>Voting Rounds</button>
-			<button onClick={() => setStatus('closed')}>Closed Rounds</button>
+		<>
+			{data.map((round) => {
+				return (
+					<div key={round.id}>
+						<a href={round?.url}>
+							{round?.house.name}: {round?.name}
+						</a>
+						<p>{round?.description}</p>
 
-			<p>{JSON.stringify(data, null, 2)}</p>
-		</div>
+						<ul>
+							{round?.proposals.map((prop) => {
+								return (
+									<li key={prop.id}>
+										<a href={prop.url}>
+											<p>{prop.title}</p>
+											<p>{prop.summary}</p>
+										</a>
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				);
+			})}
+		</>
 	);
-};
-
-export default App;
+}
