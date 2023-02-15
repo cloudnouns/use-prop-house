@@ -51,6 +51,7 @@ export type Round = {
 		summary: string;
 		url: string;
 		votes: number;
+		isWinner: boolean;
 	}[];
 };
 
@@ -67,6 +68,7 @@ export type Proposal = {
 	title: string;
 	summary: string;
 	content: string;
+	isWinner: boolean;
 	voteCount: number;
 	votes: {
 		created: number;

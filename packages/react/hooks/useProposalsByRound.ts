@@ -57,6 +57,7 @@ const formatData = (
 			title: prop?.title ?? '',
 			summary: prop?.tldr ?? '',
 			content: prop?.what ?? '',
+			isWinner: false,
 			voteCount: prop?.voteCount ?? 0,
 			votes:
 				prop?.votes?.map((vote: any) => {
@@ -78,6 +79,20 @@ const formatData = (
 		return proposal;
 	});
 
+	// mark winners
+	const roundStatus = result?.auction?.status ?? '';
+	if (roundStatus === 'Closed') {
+		const winnerCount = result?.auction?.numWinners ?? 0;
+		const winners = formattedProps
+			.sort((a, b) => b.voteCount - a.voteCount)
+			.slice(0, winnerCount);
+
+		for (const winner of winners) {
+			const propIndex = formattedProps.findIndex((p) => p.id === winner.id);
+			if (propIndex >= 0) formattedProps[propIndex].isWinner = true;
+		}
+	}
+
 	return { data: formattedProps };
 };
 
@@ -86,6 +101,7 @@ const query = `query GetProposalsByRoundId($id: Int!) {
     id
 		title
 		status
+		numWinners
 		proposals {
       createdDate
       address
