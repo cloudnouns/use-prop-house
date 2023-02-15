@@ -80,6 +80,7 @@ const formatData = (
 					summary: prop?.tldr ?? '',
 					url: url(['proposal', String(prop?.id)]),
 					votes: prop?.voteCount ?? 0,
+					isWinner: false,
 				};
 			}) ?? [],
 	};
@@ -88,6 +89,17 @@ const formatData = (
 		formattedRound.proposals = formattedRound.proposals.sort(
 			(a, b) => b.votes - a.votes
 		);
+	}
+
+	// mark winners
+	if (Date.now() >= formattedRound.voteDeadline) {
+		const winners = formattedRound.proposals.slice(
+			0,
+			formattedRound.funding.winners
+		);
+		for (const winner of winners) {
+			winner.isWinner = true;
+		}
 	}
 
 	return { data: formattedRound };

@@ -58,6 +58,7 @@ const formatData = (
 		title: prop?.title ?? '',
 		summary: prop?.tldr ?? '',
 		content: prop?.what ?? '',
+		isWinner: false,
 		voteCount: prop?.voteCount ?? 0,
 		votes:
 			prop?.votes?.map((vote: any) => {
@@ -76,6 +77,17 @@ const formatData = (
 		);
 	}
 
+	// mark winners
+	const roundStatus = prop?.auction?.status ?? '';
+	if (roundStatus === 'Closed') {
+		const winnerCount = prop?.auction?.numWinners ?? 0;
+		const winners = prop?.auction?.proposals
+			?.sort((a: any, b: any) => b.voteCount - a.voteCount)
+			.slice(0, winnerCount)
+			.map((w: any) => w?.id);
+		if (winners.includes(proposal.id)) proposal.isWinner = true;
+	}
+
 	return { data: proposal };
 };
 
@@ -85,6 +97,11 @@ const query = `query GetProposalById($id: Int!) {
       id
       title
       status
+			numWinners
+			proposals {
+        id
+        voteCount
+      }
     }
     createdDate
     address
