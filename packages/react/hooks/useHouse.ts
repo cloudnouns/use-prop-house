@@ -3,13 +3,14 @@ import type { House } from '../types';
 import Dispatcher from '../utils/dispatcher';
 import { fetchDataByQuery, slug, timestamp, url } from '../utils';
 
-type UseHouseConfig = {
-	id: number;
-};
+type UseHouseConfig =
+	| { id: number; contract?: string }
+	| { contract: string; id?: number };
 
 const emptyHouse = {} as House;
 
-export const useHouse = ({ id }: UseHouseConfig) => {
+export const useHouse = ({ id, contract }: UseHouseConfig) => {
+	const [searchKey, setSearchKey] = useState<string | number>();
 	const [house, setHouse] = useState<House>(emptyHouse);
 	const [error, setError] = useState<string>('');
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -19,18 +20,36 @@ export const useHouse = ({ id }: UseHouseConfig) => {
 	}, []);
 
 	useEffect(() => {
+		if (typeof id !== 'number' && id !== 0 && !contract) {
+			setSearchKey(undefined);
+			dispatch.err('invalid_id_or_contract', emptyHouse);
+		} else {
+			// id takes precedence over contract
+			if (Number.isInteger(id)) setSearchKey(id);
+			else setSearchKey(contract);
+		}
+	}, [id, contract, dispatch]);
+
+	useEffect(() => {
 		dispatch.reset();
 
 		const getData = async () => {
-			const response = await fetchDataByQuery(query, { id });
+			let query = queryById;
+			if (typeof searchKey === 'string') query = queryByContract;
+			const response = await fetchDataByQuery(query, {
+				id: searchKey,
+				contract: searchKey,
+			});
 			const { data, error } = formatData(response, emptyHouse);
 			if (error) dispatch.err(error, emptyHouse);
 			else dispatch.update(data);
 		};
 
-		if (Number.isInteger(id) && id > 0) getData();
-		else dispatch.err('invalid_id', emptyHouse);
-	}, [id, dispatch]);
+		if (searchKey || Number.isInteger(searchKey)) getData();
+		else if (typeof id !== 'number' && id !== 0 && !contract) {
+			dispatch.err('invalid_id_or_contract', emptyHouse);
+		}
+	}, [searchKey, id, contract, dispatch]);
 
 	return { data: house, error, isLoading };
 };
@@ -42,7 +61,7 @@ const formatData = (
 	if (!data) return { data: fallback, error: 'query_failed' };
 
 	const { data: result, errors: error } = data;
-	const house = result?.community;
+	const house = result?.community ?? result?.findByAddress;
 
 	if (error) return { data: fallback, error: JSON.stringify(error) };
 
@@ -90,8 +109,28 @@ const formatData = (
 	return { data: formattedHouse };
 };
 
-const query = `query GetHouseById($id: Int!) {
+const queryById = `query GetHouseById($id: Int!) {
   community(id: $id) {
+    id
+    name
+    contractAddress
+    createdDate
+    description
+    profileImageUrl
+    auctions {
+      id
+      fundingAmount
+      currencyType
+      numWinners
+      proposals {
+        id
+      }
+    }
+  }
+}`;
+
+const queryByContract = `query GetHouseByContract($contract: String!) {
+  findByAddress(address: $contract) {
     id
     name
     contractAddress

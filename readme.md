@@ -36,9 +36,12 @@ yarn add use-prop-house
 
 **Config object**
 
-| key  | value    |
-| ---- | -------- |
-| `id` | `number` |
+| key         | value    |
+| ----------- | -------- |
+| `id?`       | `number` |
+| `contract?` | `string` |
+
+Requires either `id` or `contract`. Priority is given to `id` when both are present.
 
 **Usage**
 
@@ -46,7 +49,10 @@ yarn add use-prop-house
 import { useHouse } from 'use-prop-house';
 
 export default function App() {
-  const { data, error, isLoading } = useHouse({ id: 21 });
+  const { data, error, isLoading } = useHouse({
+    id: 21, // or
+    contract: '0xdf9b7d26c8fc806b1ae6273684556761ff02d422',
+  });
 
   if (isLoading) return <p>Loading data...</p>;
   if (error) return <p>Error: {error}</p>;
